@@ -1,6 +1,10 @@
 <launch>
   <group ns="camera1">
     <include file="$(find bloodhound)/launch/camera1.launch" respawn="true"/>
+    <include file="$(find apriltags2_ros)/launch/continuous_detection.launch">
+      <arg name="image_topic" value="image_raw"/> 
+      <arg name="camera_name" value="/camera1/camera"/>
+    </include>
   </group>
 
   <group ns="camera2">
