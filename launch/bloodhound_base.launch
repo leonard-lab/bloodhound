@@ -1,0 +1,13 @@
+<launch>
+  <group ns="camera2">
+    <include file="$(find apriltags2_ros)/launch/continuous_detection.launch">
+      <arg name="image_topic" value="image_raw"/> 
+      <arg name="camera_name" value="/camera2/camera"/>
+    </include>
+  </group>
+
+  <node pkg="bloodhound" type="sitedegreemeasurement.py" name="sitedegreemeasurement" respawn="true"/> 
+
+  <node pkg="bloodhound" type="keyboard_monitor.py" name="keyboard_monitor" respawn="true"/> 
+
+</launch>
