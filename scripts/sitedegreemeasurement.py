@@ -175,8 +175,9 @@ def sitedegreemeasurement():
 
 
 			#Open Text File for writing
-			data_path = "/home/leonardlab/Documents/TestSiteData/"
-			text_file = open(data_path + "SiteMeasurement" + tag_name +".txt", "w")
+			#data_path = "/home/leonardlab/Documents/TestSiteData/"
+			#text_file = open(data_path + "SiteMeasurement" + tag_name +".txt", "w")
+			text_file = open("SiteMeasurement" + tag_name +".txt", "w")
 
 			#Start running_flag
 			running_flag = True
@@ -212,8 +213,11 @@ def sitedegreemeasurement():
 			#print time.time()
 			#print on_target_time
 
-			if on_target_flag:
-				if time.time() - on_target_time > stay_time:
+			if on_target_flag or last_keypress == 'n':
+				if time.time() - on_target_time > stay_time or last_keypress == 'n':
+					if last_keypress == 'n':
+						last_keypress = ''
+						
 					#Make measurement
 					sample_cnt = sample_cnt + 1;
 					rospy.loginfo("Sampling angle %i" %(site_angles[sample_cnt]))
