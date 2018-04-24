@@ -63,7 +63,7 @@ deg_to_rotate = 120
 
 global text_file_Raw
 text_file_Raw = open("RawDetections.txt", "w")
-text_file_Raw.write("python time, arduino time, detector number \n")
+text_file_Raw.write("python time, arduino time, heading angle, detector angle, detector number \n")
 
 
 
@@ -78,7 +78,7 @@ def callback_gamma1(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), 1))
+        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), round(current_angle), 1))
 
 def callback_gamma2(data):
     global current_angle
@@ -86,7 +86,7 @@ def callback_gamma2(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), 2))
+        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), wrapto360(round(current_angle)+120), 2))
 
 def callback_gamma3(data):
     global current_angle
@@ -94,7 +94,7 @@ def callback_gamma3(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), 3))
+        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), wrapto360(round(current_angle)+240), 3))
 
 #General Functions
 
