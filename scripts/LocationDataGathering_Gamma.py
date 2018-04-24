@@ -37,12 +37,13 @@
 
 #Dependencies
 import rospy
-from std_msgs.msg import String, Bool, Float32, ByteMultiArray, UInt32
-from geometry_msgs.msg import Twist, TransformStamped
-from kobuki_msgs.msg import BumperEvent
+from std_msgs.msg import String, Bool, Float32, ByteMultiArray, UInt32, Empty
+from geometry_msgs.msg import Twist, TransformStamped, Pose
+from nav_msgs.msg import Odometry
 import numpy as np
 import math
 import time
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 #Variables
 global main_rate
@@ -65,12 +66,27 @@ global text_file_Raw
 text_file_Raw = open("RawDetections.txt", "w")
 text_file_Raw.write("python time, arduino time, heading angle, detector angle, detector number \n")
 
+global initial_angle
+initial_angle = -1
 
 
 #Define callbacks for all subscribers
 def callback_odom(data):
-    global current_angle
-    current_angle = wrapto360(np.rad2deg(data.transform.rotation.z)) 
+    print "Angle Received"
+    global current_angle 
+    global initial_angle
+ 
+    Euler_position = Twist()
+
+    [Euler_position.angular.x, Euler_position.angular.y, Euler_position.angular.z] = euler_from_quaternion([data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w])
+    [Euler_position.linear.x, Euler_position.linear.y, Euler_position.linear.z] = [data.pose.pose.position.x, data.pose.pose.position.y, data.pose.pose.position.z]
+    
+    if initial_angle == -1: #Runs only first time to set the angle offset
+        initial_angle = wrapto360(np.rad2deg(Euler_position.angular.z)) 
+
+
+    current_angle = wrapto360(np.rad2deg(Euler_position.angular.z) - initial_angle) 
+    print current_angle
 
 def callback_gamma1(data):
     global current_angle
@@ -78,7 +94,7 @@ def callback_gamma1(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), round(current_angle), 1))
+        text_file_Raw.write("%i, %i, %i, %i, %i \n" %(time.time(), data.data, round(current_angle), round(current_angle), 1))
 
 def callback_gamma2(data):
     global current_angle
@@ -86,7 +102,7 @@ def callback_gamma2(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), wrapto360(round(current_angle)+120), 2))
+        text_file_Raw.write("%i, %i, %i, %i, %i \n" %(time.time(), data.data, round(current_angle), wrapto360(round(current_angle)+120), 2))
 
 def callback_gamma3(data):
     global current_angle
@@ -94,7 +110,7 @@ def callback_gamma3(data):
     global on_target_flag
 
     if on_target_flag:
-        text_file_Raw.write("%i, %i \n" %(time.time(), data, round(current_angle), wrapto360(round(current_angle)+240), 3))
+        text_file_Raw.write("%i, %i, %i, %i, %i \n" %(time.time(), data.data, round(current_angle), wrapto360(round(current_angle)+240), 3))
 
 #General Functions
 
@@ -117,7 +133,7 @@ def Control_Law(current_target_angle):
         return velocity_command
     else:
         on_target_flag = False
-        velocity_command.angular.z = 0.075 * np.sign(wrapto180(current_angle - current_target_angle))  #bang/bang control
+        velocity_command.angular.z = 0.075 * np.sign(wrapto180(current_target_angle - current_angle))  #bang/bang control
 
     return velocity_command
 
@@ -133,7 +149,7 @@ def get_target_angle(angle_time_spent):
             break
     return index
 
-def wrapto360(self, angle):
+def wrapto360(angle):
     #Wraps angle to -0 to 360
     newAngle = angle;
     while (newAngle < 0):
@@ -176,17 +192,18 @@ def LocationDataGathering():
     angle_time_spent = np.zeros(len(angles))
 
     current_target_angle_i = 0
-    target_region = .1
+    target_region = .4
 
 
     #Subscribe to topics
-    rospy.Subscriber('/odom', TransformStamped, callback_odom)
+    rospy.Subscriber('/odom', Odometry, callback_odom)
     rospy.Subscriber('/gamma1', UInt32, callback_gamma1)
     rospy.Subscriber('/gamma2', UInt32, callback_gamma2)
     rospy.Subscriber('/gamma3', UInt32, callback_gamma3)
 
     #Set up publishers
-    pub_velocity_command = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    pub_velocity_command = rospy.Publisher('/cmd_vel', Twist, queue_size=10) #velocity publisher
+    
 
     time1= time.time()
     # Keep node going until it is stopped
